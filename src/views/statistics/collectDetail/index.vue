@@ -1,0 +1,109 @@
+<template>
+  <div id="orderList">
+    <serch ref="serchDiv" />
+    <br />
+    <a-spin :spinning="spinning">
+      <tableList :heights="heights" ref="tableList" :dataList="dataList"  @collectDetail="collectDetail">
+        <template #opercate>
+          <a-row type="flex" justify="space-between">
+            <a-col :span="8"> </a-col>
+          </a-row>
+        </template>
+      </tableList>
+    </a-spin>
+  </div>
+</template>
+
+<script>
+import serch from '@/views/statistics/collectDetail/components/serch';
+import tableList from '@/views/statistics/collectDetail/components/tableList';
+import { getHight } from '@/utils/business';
+import { collectDetail } from '@/api/index'
+import { getFirstDay, getLastDay } from '@/utils/index'
+export default {
+  name: 'orderList',
+  components: {
+    serch,
+    tableList
+  },
+  data() {
+    return {
+      heights: '',
+      dataList: [],
+      total: 0,
+      spinning: false,
+      pageAge: {}
+    };
+  },
+  created() {
+    this.collectDetail()
+  },
+  methods: {
+    getHeights() {
+      // 100 是顶部固定的高度, 48是card 的padding 上下, 64是搜索框的高度（变量需获取）24 是<br/> 标签，
+      // 24是table  card small padding 上下，32 是表格内的按钮操作的高度
+      // 64 是分页的高度+上下margin的距离
+      // 54 是table 表头的高度
+      // const headerFixedHeight = 100  // 100 是顶部固定的高度
+      // const bodyCardHeight = 48  // 48是card 的padding 上下
+      // const brHeight = 24 // 是<br/> 标签
+      // const tableCardSmall = 24 // 24是table  card small padding 上下
+      // const tableBtnHeight = 32 // 32 是表格内的按钮操作的高度
+      // const tablePageAgeHeight = 64  // 64 是分页的高度+上下margin的距离
+      // const tableHeaderHeight = 54  // 54 是table 表头的高度
+      // const { headerFixedHeight, bodyCardHeight, brHeight, tableCardSmall, tableBtnHeight, tablePageAgeHeight, tableHeaderHeight } = heightObj
+      const heightObj = {
+        headerFixedHeight: 100,
+        bodyCardHeight: 48,
+        brHeight: 24,
+        tableCardSmall: 24,
+        // tableBtnHeight: 32,
+        tablePageAgeHeight: 64,
+        tableHeaderHeight: 54
+      };
+      this.heights = '100%' // getHight(this, 'serchDiv', heightObj);
+    },
+         /***
+     * @描述 请求列表 查询接口 
+     * @params 
+     * @url refundList
+     * */ 
+    async collectDetail(serchValue = {}) {
+      try {
+          const time = this.$route.query?.time || ''
+        serchValue.startTime = time ? getFirstDay(time) : '' // moment(values?.purchasetime[0]).format('YYYY-MM-DD')
+        serchValue.endTime = time ? getLastDay(time) : '' // moment(values?.purchasetime[1]).format('YYYY-MM-DD')
+        if (serchValue) {
+          this.pageAge = Object.assign(this.pageAge, serchValue)
+        }
+        const obj = this.pageAge
+        this.spinning = true
+        const result = await collectDetail(obj)
+        this.spinning = false
+        console.log(result)
+        this.dataList = Array.from(new Set(result?.data))  || []
+      } catch (error) {
+        console.log('加载列表接口(collectDetail)的错误信息--->', error)
+        this.spinning = false
+        this.dataList = []
+      }
+    },
+
+  },
+  mounted() {
+    const that = this;
+    that.$nextTick(() => {
+      that.getHeights();
+    });
+    // window.onresize = () => {
+    //   that.getHeights();
+    // };
+  }
+};
+</script>
+
+<style scoped lang="scss">
+.ant-statistic {
+  display: inline-block;
+}
+</style>
